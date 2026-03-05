@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Particle Animation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 0 30px;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff7e5f, #feb47b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 20px rgba(255, 126, 95, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .canvas-container {
+            flex: 1;
+            min-width: 600px;
+            height: 600px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #particleCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .controls {
+            flex: 0 0 350px;
+            background: rgba(20, 20, 40, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-group h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #feb47b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group h3 i {
+            font-size: 1.1rem;
+        }
+
+        .slider-container {
+            margin-bottom: 15px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .slider-label span:last-child {
+            font-weight: bold;
+            color: #ff7e5f;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #ff7e5f;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 126, 95, 0.7);
+        }
+
+        .color-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.active {
+            transform: scale(1.15);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+            border: 2px solid white;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .primary-btn {
+            background: linear-gradient(90deg, #ff7e5f, #feb47b);
+            color: #0f0c29;
+        }
+
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .instructions {
+            background: rgba(20, 20, 40, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .instructions h3 {
+            color: #feb47b;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .instructions p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            opacity: 0.9;
+        }
+
+        .stats {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            display: flex;
+            gap: 15px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        @media (max-width: 1100px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .canvas-container {
+                min-width: 100%;
+            }
+            
+            .controls {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .canvas-container {
+                height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-magic"></i> Interactive Particle Generator</h1>
+            <p class="subtitle">Create mesmerizing particle animations in real-time. Adjust the settings below to customize your experience!</p>
+        </header>
+
+        <div class="main-content">
+            <div class="canvas-container">
+                <canvas id="particleCanvas"></canvas>
+                <div class="stats">
+                    <span id="particleCount">Particles: 150</span>
+                    <span id="fpsCounter">FPS: 60</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <h3><i class="fas fa-sliders-h"></i> Particle Controls</h3>
+                    
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Particle Count</span>
+                            <span id="countValue">150</span>
+                        </div>
+                        <input type="range" id="particleCountSlider" min="10" max="500" value="150" step="10">
+                    </div>
+
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Particle Size</span>
+                            <span id="sizeValue">3</span>
+                        </div>
+                        <input type="range" id="particleSizeSlider" min="1" max="10" value="3" step="0.5">
+                    </div>
+
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Movement Speed</span>
+                            <span id="speedValue">1.0</span>
+                        </div>
+                        <input type="range" id="speedSlider" min="0.1" max="3" value="1.0" step="0.1">
+                    </div>
+
+                    <div class="slider-container">
+                        <div class="slider-label">
+                            <span>Connection Distance</span>
+                            <span id="distanceValue">100</span>
+                        </div>
+                        <input type="range" id="distanceSlider" min="20" max="200" value="100" step="5">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3><i class="fas fa-palette"></i> Color Theme</h3>
+                    <div class="color-options">
+                        <div class="color-option active" style="background: linear-gradient(135deg, #ff7e5f, #feb47b);" data-color="sunset"></div>
+                        <div class="color-option" style="background: linear-gradient(135deg, #00c6ff, #0072ff);" data-color="ocean"></div>
+                        <div class="color-option" style="background: linear-gradient(135deg, #9d50bb, #6e48aa);" data-color="purple"></div>
+                        <div class="color-option" style="background: linear-gradient(135deg, #11998e, #38ef7d);" data-color="emerald"></div>
+                        <div class="color-option" style="background: linear-gradient(135deg, #ff5e62, #ff9966);" data-color="coral"></div>
+                        <div class="color-option" style="background: linear-gradient(135deg, #fdfc47, #24fe41);" data-color="neon"></div>
+                        <div class="color-option" style="background: linear-gradient(135deg, #ffffff, #aaaaaa);" data-color="monochrome"></div>
+                        <div class="color-option" style="background: linear-gradient(135deg, #ff00cc, #333399);" data-color="vibrant"></div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3><i class="fas fa-cogs"></i> Behavior Presets</h3>
+                    <div class="preset-buttons">
+                        <div class="preset-btn" data-preset="calm">Calm Flow</div>
+                        <div class="preset-btn" data-preset="chaotic">Chaotic Motion</div>
+                        <div class="preset-btn" data-preset="swirl">Swirl Pattern</div>
+                        <div class="preset-btn" data-preset="explosion">Explosion</div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="primary-btn" id="resetBtn">
+                        <i class="fas fa-redo"></i> Reset to Default
+                    </button>
+                    <button class="secondary-btn" id="pauseBtn">
+                        <i class="fas fa-pause"></i> Pause Animation
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3><i class="fas fa-info-circle"></i> How to Use</h3>
+            <p>1. Adjust the sliders to change particle count, size, speed, and connection distance.</p>
+            <p>2. Click on color themes to change the visual appearance of the particles.</p>
+            <p>3. Try different behavior presets to see unique particle movement patterns.</p>
+            <p>4. Click and drag on the canvas to interact with particles directly.</p>
+            <p>5. Use the reset button to return to default settings or pause the animation.</p>
+        </div>
+
+        <div class="footer">
+            <p>Interactive Particle Animation Generator | Created by Ale with HTML5 Canvas & JavaScript</p>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+
+        // Animation state
+        let animationId = null;
+        let isPaused = false;
+        let lastTime = 0;
+        let frameCount = 0;
+        let fps = 60;
+
+        // Particle system settings
+        let settings = {
+            particleCount: 150,
+            particleSize: 3,
+            speed: 1.0,
+            connectionDistance: 100,
+            colorTheme: 'sunset',
+            behavior: 'default'
+        };
+
+        // Color themes
+        const themes = {
+            sunset: { particle: '#ff7e5f', connection: '#feb47b' },
+            ocean: { particle: '#00c6ff', connection: '#0072ff' },
+            purple: { particle: '#9d50bb', connection: '#6e48aa' },
+            emerald: { particle: '#11998e', connection: '#38ef7d' },
+            coral: { particle: '#ff5e62', connection: '#ff9966' },
+            neon: { particle: '#fdfc47', connection: '#24fe41' },
+            monochrome: { particle: '#ffffff', connection: '#aaaaaa' },
+            vibrant: { particle: '#ff00cc', connection: '#333399' }
+        };
+
+        // Particle array
+        let particles = [];
+
+        // Mouse interaction
+        let mouse = {
+            x: null,
+            y: null,
+            radius: 100
+        };
+
+        // Initialize particles
+        function initParticles() {
+            particles = [];
+            
+            for (let i = 0; i < settings.particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: settings.particleSize + Math.random() * 2,
+                    speedX: (Math.random() - 0.5) * settings.speed,
+                    speedY: (Math.random() - 0.5) * settings.speed,
+                    color: themes[settings.colorTheme].particle,
+                    originalSpeedX: 0,
+                    originalSpeedY: 0
+                });
+                
+                // Store original speed for resetting after interactions
+                particles[i].originalSpeedX = particles[i].speedX;
+                particles[i].originalSpeedY = particles[i].speedY;
+            }
+            
+            updateStats();
+        }
+
+        // Draw particles and connections
+        function drawParticles() {
+            // Clear canvas with a slight fade effect for trails
+            ctx.fillStyle = 'rgba(15, 12, 41, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw connections between nearby particles
+            ctx.strokeStyle = themes[settings.colorTheme].connection;
+            ctx.lineWidth = 0.5;
+            
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < settings.connectionDistance) {
+                        // Draw line with opacity based on distance
+                        const opacity = 1 - (distance / settings.connectionDistance);
+                        ctx.globalAlpha = opacity;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                        ctx.globalAlpha = 1.0;
+                    }
+                }
+            }
+            
+            // Draw individual particles
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                
+                // Draw particle glow
+                const gradient = ctx.createRadialGradient(
+                    p.x, p.y, 0,
+                    p.x, p.y, p.size * 2
+                );
+                gradient.addColorStop(0, p.color);
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * 1.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw particle core
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Update particle positions
+        function updateParticles() {
+            // Apply behavior presets
+            applyBehaviorPreset();
+            
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                
+                // Mouse interaction
+                if (mouse.x !== null && mouse.y !== null) {
+                    const dx = mouse.x - p.x;
+                    const dy = mouse.y - p.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < mouse.radius) {
+                        // Repel particles from mouse
+                        const force = (mouse.radius - distance) / mouse.radius;
+                        const angle = Math.atan2(dy, dx);
+                        
+                        p.speedX = p.originalSpeedX - Math.cos(angle) * force * 5;
+                        p.speedY = p.originalSpeedY - Math.sin(angle) * force * 5;
+                    } else {
+                        // Gradually return to original speed
+                        p.speedX += (p.originalSpeedX - p.speedX) * 0.05;
+                        p.speedY += (p.originalSpeedY - p.speedY) * 0.05;
+                    }
+                }
+                
+                // Update position
+                p.x += p.speedX;
+                p.y += p.speedY;
+                
+                // Bounce off walls
+                if (p.x <= 0 || p.x >= canvas.width) p.speedX *= -1;
+                if (p.y <= 0 || p.y >= canvas.height) p.speedY *= -1;
+                
+                // Keep particles within bounds
+                p.x = Math.max(p.size, Math.min(canvas.width - p.size, p.x));
+                p.y = Math.max(p.size, Math.min(canvas.height - p.size, p.y));
+            }
+        }
+
+        // Apply behavior presets
+        function applyBehaviorPreset() {
+            if (settings.behavior === 'calm') {
+                // Slower, smoother movement
+                for (let p of particles) {
+                    p.originalSpeedX *= 0.5;
+                    p.originalSpeedY *= 0.5;
+                }
+            } else if (settings.behavior === 'chaotic') {
+                // Faster, random movement
+                for (let p of particles) {
+                    p.originalSpeedX = (Math.random() - 0.5) * settings.speed * 3;
+                    p.originalSpeedY = (Math.random() - 0.5) * settings.speed * 3;
+                }
+            } else if (settings.behavior === 'swirl') {
+                // Swirling motion around center
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                
+                for (let p of particles) {
+                    const dx = p.x - centerX;
+                    const dy = p.y - centerY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Angular velocity increases with distance from center
+                    const angle = Math.atan2(dy, dx);
+                    const angularSpeed = 0.01 * settings.speed;
+                    
+                    p.originalSpeedX = -Math.sin(angle) * angularSpeed * distance;
+                    p.originalSpeedY = Math.cos(angle) * angularSpeed * distance;
+                }
+            } else if (settings.behavior === 'explosion') {
+                // Particles move outward from center
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                
+                for (let p of particles) {
+                    const dx = p.x - centerX;
+                    const dy = p.y - centerY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const angle = Math.atan2(dy, dx);
+                    
+                    p.originalSpeedX = Math.cos(angle) * settings.speed * 0.5;
+                    p.originalSpeedY = Math.sin(angle) * settings.speed * 0.5;
+                }
+            }
+        }
+
+        // Animation loop
+        function animate(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+            
+            // Calculate FPS
+            frameCount++;
+            if (deltaTime > 0) {
+                fps = Math.round(1000 / deltaTime);
+                if (frameCount % 10 === 0) {
+                    document.getElementById('fpsCounter').textContent = `FPS: ${Math.min(fps, 60)}`;
+                }
+            }
+            
+            if (!isPaused) {
+                updateParticles();
+                drawParticles();
+            }
+            
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Update UI elements
+        function updateUI() {
+            document.getElementById('countValue').textContent = settings.particleCount;
+            document.getElementById('sizeValue').textContent = settings.particleSize;
+            document.getElementById('speedValue').textContent = settings.speed;
+            document.getElementById('distanceValue').textContent = settings.connectionDistance;
+            
+            // Update particle colors
+            for (let p of particles) {
+                p.color = themes[settings.colorTheme].particle;
+            }
+            
+            updateStats();
+        }
+
+        // Update statistics display
+        function updateStats() {
+            document.getElementById('particleCount').textContent = `Particles: ${particles.length}`;
+        }
+
+        // Event listeners for sliders
+        document.getElementById('particleCountSlider').addEventListener('input', function() {
+            settings.particleCount = parseInt(this.value);
+            initParticles();
+            updateUI();
+        });
+
+        document.getElementById('particleSizeSlider').addEventListener('input', function() {
+            settings.particleSize = parseFloat(this.value);
+            for (let p of particles) {
+                p.size = settings.particleSize + Math.random() * 2;
+            }
+            updateUI();
+        });
+
+        document.getElementById('speedSlider').addEventListener('input', function() {
+            settings.speed = parseFloat(this.value);
+            for (let p of particles) {
+                p.originalSpeedX = (p.originalSpeedX / (settings.speed / 1.0)) * settings.speed;
+                p.originalSpeedY = (p.originalSpeedY / (settings.speed / 1.0)) * settings.speed;
+            }
+            updateUI();
+        });
+
+        document.getElementById('distanceSlider').addEventListener('input', function() {
+            settings.connectionDistance = parseInt(this.value);
+            updateUI();
+        });
+
+        // Event listeners for color options
+        document.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+                settings.colorTheme = this.getAttribute('data-color');
+                updateUI();
+            });
+        });
+
+        // Event listeners for preset buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                settings.behavior = this.getAttribute('data-preset');
+                document.querySelectorAll('.preset-btn').forEach(b => b.style.background = 'rgba(255, 255, 255, 0.08)');
+                this.style.background = 'rgba(255, 126, 95, 0.3)';
+            });
+        });
+
+        // Reset button
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            settings = {
+                particleCount: 150,
+                particleSize: 3,
+                speed: 1.0,
+                connectionDistance: 100,
+                colorTheme: 'sunset',
+                behavior: 'default'
+            };
+            
+            // Reset UI elements
+            document.getElementById('particleCountSlider').value = settings.particleCount;
+            document.getElementById('particleSizeSlider').value = settings.particleSize;
+            document.getElementById('speedSlider').value = settings.speed;
+            document.getElementById('distanceSlider').value = settings.connectionDistance;
+            
+            // Reset color theme
+            document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('active'));
+            document.querySelector('.color-option[data-color="sunset"]').classList.add('active');
+            
+            // Reset preset buttons
+            document.querySelectorAll('.preset-btn').forEach(b => b.style.background = 'rgba(255, 255, 255, 0.08)');
+            
+            initParticles();
+            updateUI();
+        });
+
+        // Pause/Resume button
+        document.getElementById('pauseBtn').addEventListener('click', function() {
+            isPaused = !isPaused;
+            const icon = this.querySelector('i');
+            const text = this.querySelector('span');
+            
+            if (isPaused) {
+                icon.className = 'fas fa-play';
+                text.textContent = 'Resume Animation';
+                this.classList.remove('secondary-btn');
+                this.classList.add('primary-btn');
+            } else {
+                icon.className = 'fas fa-pause';
+                text.textContent = 'Pause Animation';
+                this.classList.remove('primary-btn');
+                this.classList.add('secondary-btn');
+            }
+        });
+
+        // Mouse interaction
+        canvas.addEventListener('mousemove', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mouseleave', function() {
+            mouse.x = null;
+            mouse.y = null;
+        });
+
+        // Window resize
+        window.addEventListener('resize', function() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            initParticles();
+        });
+
+        // Initialize and start animation
+        initParticles();
+        animate();
+
+        // Add some floating particles animation to the background of the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create some floating particles in the background
+            const bgParticles = document.createElement('div');
+            bgParticles.style.position = 'fixed';
+            bgParticles.style.top = '0';
+            bgParticles.style.left = '0';
+            bgParticles.style.width = '100%';
+            bgParticles.style.height = '100%';
+            bgParticles.style.pointerEvents = 'none';
+            bgParticles.style.zIndex = '1';
+            document.body.appendChild(bgParticles);
+            
+            // Create background particles
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'absolute';
+                particle.style.width = Math.random() * 5 + 2 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                particle.style.borderRadius = '50%';
+                particle.style.left = Math.random() * 100 + 'vw';
+                particle.style.top = Math.random() * 100 + 'vh';
+                
+                // Add animation
+                const duration = Math.random() * 30 + 20;
+                particle.style.animation = `float ${duration}s linear infinite`;
+                
+                // Add keyframes for floating animation
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes float {
+                        0% { transform: translate(0, 0) rotate(0deg); }
+                        25% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(90deg); }
+                        50% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(180deg); }
+                        75% { transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(270deg); }
+                        100% { transform: translate(0, 0) rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                bgParticles.appendChild(particle);
+            }
+        });
+    </script>
+</body>
+</html>
